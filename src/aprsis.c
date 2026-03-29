@@ -120,13 +120,13 @@ aprs_err_t aprsis_format_login(const aprsis_connect_params_t *p,
 
     if (p->filter && p->filter[0]) {
         n = snprintf(buf, buflen,
-                     "user %s pass %s vers libaprs 0.1.0 filter %s\r\n",
+                     "user %s pass %s vers libaprs 1.0.1 filter %s\r\n",
                      p->login,
                      (p->passcode && p->passcode[0]) ? p->passcode : "-1",
                      p->filter);
     } else {
         n = snprintf(buf, buflen,
-                     "user %s pass %s vers libaprs 0.1.0\r\n",
+                     "user %s pass %s vers libaprs 1.0.1\r\n",
                      p->login,
                      (p->passcode && p->passcode[0]) ? p->passcode : "-1");
     }

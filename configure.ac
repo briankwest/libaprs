@@ -1,5 +1,5 @@
 AC_PREREQ([2.69])
-AC_INIT([libaprs], [0.1.0], [https://github.com/briankwest/libaprs/issues])
+AC_INIT([libaprs], [1.0.1], [https://github.com/briankwest/libaprs/issues])
 AC_CONFIG_AUX_DIR([build-aux])
 AC_CONFIG_MACRO_DIRS([m4])
 AM_INIT_AUTOMAKE([foreign subdir-objects -Wall -Werror dist-xz])

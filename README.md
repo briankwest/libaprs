@@ -795,7 +795,7 @@ libaprs/
 
 ### APRS-IS Client
 - TCP with getaddrinfo (IPv4/IPv6 dual-stack)
-- Login line: `user CALL pass CODE vers libaprs 0.1.0 filter FILTER\r\n`
+- Login line: `user CALL pass CODE vers libaprs 1.0.1 filter FILTER\r\n`
 - Passcode: XOR hash of uppercase callsign (strips SSID)
 - Internal line buffer with CRLF/LF handling, automatic server comment filtering
 - FNV-1a hash ring for line-level duplicate suppression (128 slots)

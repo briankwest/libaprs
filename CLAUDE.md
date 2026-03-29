@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project
 
-libaprs is a C99 library for APRS (Automatic Packet Reporting System) packet parsing, building, and transport. It targets amateur radio applications. Currently in early skeleton phase (v0.1.0) with stub implementations in several modules.
+libaprs is a C99 library for APRS (Automatic Packet Reporting System) packet parsing, building, and transport. It targets amateur radio applications. Currently at v1.0.1 with stub implementations in several modules.
 
 ## Build
 

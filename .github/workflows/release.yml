@@ -44,12 +44,8 @@ jobs:
             make
             make check
             dpkg-buildpackage -us -uc -b
-
-      - name: Collect artifacts
-        run: |
-          mkdir -p dist
-          cp ../*.deb ../*.ddeb dist/ 2>/dev/null || true
-          ls -lh dist/
+            mkdir -p /workspace/dist
+            cp ../*.deb ../*.ddeb /workspace/dist/ 2>/dev/null || true
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v5
@@ -89,12 +85,8 @@ jobs:
             make
             make check
             dpkg-buildpackage -us -uc -b
-
-      - name: Collect artifacts
-        run: |
-          mkdir -p dist
-          cp ../*.deb ../*.ddeb dist/ 2>/dev/null || true
-          ls -lh dist/
+            mkdir -p /workspace/dist
+            cp ../*.deb ../*.ddeb /workspace/dist/ 2>/dev/null || true
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v5
@@ -131,13 +123,9 @@ jobs:
               make
               make check
               dpkg-buildpackage -us -uc -b
+              mkdir -p /workspace/dist
+              cp ../*.deb ../*.ddeb /workspace/dist/ 2>/dev/null || true
             '
-
-      - name: Collect artifacts
-        run: |
-          mkdir -p dist
-          cp ../*.deb ../*.ddeb dist/ 2>/dev/null || true
-          ls -lh dist/
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v5

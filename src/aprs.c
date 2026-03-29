@@ -18,9 +18,13 @@
 
 static void copy_str(char *dst, size_t dstsz, const char *src)
 {
+    size_t len;
     if (!dst || dstsz == 0) return;
     if (!src) { dst[0] = '\0'; return; }
-    snprintf(dst, dstsz, "%s", src);
+    len = strlen(src);
+    if (len >= dstsz) len = dstsz - 1;
+    memcpy(dst, src, len);
+    dst[len] = '\0';
 }
 
 static void lat_to_aprs(double lat, char *buf)

@@ -56,10 +56,14 @@ jobs:
       - name: Build Debian packages
         run: dpkg-buildpackage -us -uc -b
 
+      - name: Collect artifacts
+        run: |
+          mkdir -p dist
+          cp ../*.deb ../*.ddeb dist/ 2>/dev/null || true
+          ls -lh dist/
+
       - name: Upload .deb artifacts
         uses: actions/upload-artifact@v5
         with:
           name: debs-amd64
-          path: |
-            ../*.deb
-            ../*.ddeb
+          path: dist/*

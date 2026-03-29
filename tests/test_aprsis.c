@@ -17,6 +17,27 @@ extern void test_begin(const char *name);
 extern void test_end(void);
 extern void test_assert(int cond, const char *msg);
 
+/* file-scope state for run-loop callback tests */
+static int g_run_cb_count;
+static char g_run_cb_lines[4][128];
+
+static void run_cb(const char *line, void *user)
+{
+    (void)user;
+    if (g_run_cb_count < 4)
+        snprintf(g_run_cb_lines[g_run_cb_count], 128, "%s", line);
+    g_run_cb_count++;
+}
+
+static int g_count_cb_count;
+
+static void count_cb(const char *line, void *user)
+{
+    (void)line;
+    (void)user;
+    g_count_cb_count++;
+}
+
 /* ------------------------------------------------------------------ */
 /* passcode                                                            */
 /* ------------------------------------------------------------------ */
@@ -370,10 +391,7 @@ void test_aprsis(void)
         int sv[2];
         aprsis_client_t *c;
 
-        /* accumulator for callback */
-        static int cb_count;
-        static char cb_lines[4][128];
-        cb_count = 0;
+        g_run_cb_count = 0;
 
         test_assert(socketpair(AF_UNIX, SOCK_STREAM, 0, sv) == 0,
                     "socketpair failed");
@@ -382,15 +400,7 @@ void test_aprsis(void)
         *(int *)((char *)c) = sv[0];
         *(int *)((char *)c + sizeof(int)) = 1;
 
-        {
-            void run_cb(const char *line, void *user) {
-                (void)user;
-                if (cb_count < 4)
-                    snprintf(cb_lines[cb_count], 128, "%s", line);
-                cb_count++;
-            }
-            aprsis_set_line_callback(c, run_cb, NULL);
-        }
+        aprsis_set_line_callback(c, run_cb, NULL);
 
         /* write server data including comments, then close */
         {
@@ -407,10 +417,10 @@ void test_aprsis(void)
         rc = aprsis_run(c);
         /* run ends with IO error when pipe closes */
         test_assert(rc == APRS_ERR_IO, "should end with IO");
-        test_assert(cb_count == 2, "should get 2 lines (comments filtered)");
-        test_assert(strcmp(cb_lines[0], "N0CALL>APRS:>hello") == 0,
+        test_assert(g_run_cb_count == 2, "should get 2 lines (comments filtered)");
+        test_assert(strcmp(g_run_cb_lines[0], "N0CALL>APRS:>hello") == 0,
                     "line 0 wrong");
-        test_assert(strcmp(cb_lines[1], "W3ADO>APRS:>world") == 0,
+        test_assert(strcmp(g_run_cb_lines[1], "W3ADO>APRS:>world") == 0,
                     "line 1 wrong");
 
         aprsis_client_destroy(c);
@@ -422,8 +432,7 @@ void test_aprsis(void)
         int sv[2];
         aprsis_client_t *c;
 
-        static int cb2_count;
-        cb2_count = 0;
+        g_count_cb_count = 0;
 
         test_assert(socketpair(AF_UNIX, SOCK_STREAM, 0, sv) == 0,
                     "socketpair failed");
@@ -433,14 +442,7 @@ void test_aprsis(void)
         *(int *)((char *)c + sizeof(int)) = 1;
         aprsis_set_pass_comments(c, true);
 
-        {
-            void count_cb(const char *line, void *user) {
-                (void)line;
-                (void)user;
-                cb2_count++;
-            }
-            aprsis_set_line_callback(c, count_cb, NULL);
-        }
+        aprsis_set_line_callback(c, count_cb, NULL);
 
         {
             const char *data = "# comment\r\ndata\r\n";
@@ -450,7 +452,7 @@ void test_aprsis(void)
         }
 
         aprsis_run(c);
-        test_assert(cb2_count == 2, "should get 2 lines with comments");
+        test_assert(g_count_cb_count == 2, "should get 2 lines with comments");
 
         aprsis_client_destroy(c);
     }

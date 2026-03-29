@@ -98,14 +98,11 @@ aprs_err_t wav_read(wav_reader_t *w, int16_t *buf, size_t max_samples,
                     size_t *nread)
 {
     size_t i, got;
-    int bytes_per_frame;
 
     if (!w || !w->fp || !buf || !nread) return APRS_ERR_INVALID_ARG;
 
     *nread = 0;
     if (w->data_remaining == 0) return APRS_OK;
-
-    bytes_per_frame = w->channels * (w->bits_per_sample / 8);
 
     if (w->bits_per_sample == 16 && w->channels == 1) {
         /* fast path: 16-bit mono — read directly */

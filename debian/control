@@ -1,0 +1,33 @@
+Source: libaprs
+Section: hamradio
+Priority: optional
+Maintainer: Brian <brian@example.com>
+Build-Depends:
+ debhelper-compat (= 13),
+ dh-autoreconf,
+Standards-Version: 4.6.2
+Homepage: https://github.com/briankwest/libaprs
+Rules-Requires-Root: no
+
+Package: libaprs0
+Architecture: any
+Multi-Arch: same
+Section: libs
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: APRS packet parsing and transport library
+ libaprs is a C library for parsing, building, and transporting APRS
+ (Automatic Packet Reporting System) packets used in amateur radio.
+ It provides layered support for TNC2 text, AX.25 UI frames, KISS
+ framing, and APRS-IS connectivity.
+
+Package: libaprs-dev
+Architecture: any
+Multi-Arch: same
+Section: libdevel
+Depends: libaprs0 (= ${binary:Version}), ${misc:Depends}
+Description: APRS packet parsing and transport library (development files)
+ libaprs is a C library for parsing, building, and transporting APRS
+ (Automatic Packet Reporting System) packets used in amateur radio.
+ .
+ This package contains the header files and pkg-config file needed
+ to build programs that use libaprs.

@@ -1,0 +1,5 @@
+usr/include/libaprs/*
+usr/lib/*/libaprs.so
+usr/lib/*/libaprs.a
+usr/lib/*/libaprs.la
+usr/lib/*/pkgconfig/libaprs.pc

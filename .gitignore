@@ -1,0 +1,98 @@
+# Build artifacts
+*.o
+*.so
+*.a
+*.la
+*.lo
+*.dSYM/
+.libs/
+.deps/
+
+# Autotools generated
+/aclocal.m4
+/autom4te.cache/
+/build-aux/compile
+/build-aux/config.guess
+/build-aux/config.sub
+/build-aux/depcomp
+/build-aux/install-sh
+/build-aux/ltmain.sh
+/build-aux/missing
+/build-aux/ar-lib
+/build-aux/test-driver
+/config.h
+/config.h.in
+/config.h.in~
+/config.log
+/config.lt
+/config.status
+/configure
+/libtool
+/stamp-h1
+m4/libtool.m4
+m4/ltoptions.m4
+m4/ltsugar.m4
+m4/ltversion.m4
+m4/lt~obsolete.m4
+Makefile
+Makefile.in
+src/Makefile
+src/Makefile.in
+include/Makefile
+include/Makefile.in
+examples/Makefile
+examples/Makefile.in
+tests/Makefile
+tests/Makefile.in
+src/.libs/
+src/.deps/
+examples/.libs/
+examples/.deps/
+tests/.libs/
+tests/.deps/
+
+# Built binaries
+examples/example_parse_packet
+examples/example_build_position
+examples/example_kiss_bridge
+examples/aprs_decode
+examples/aprs_sdr
+tests/test_libaprs
+
+# Test logs
+test-suite.log
+*.trs
+tests/test_libaprs.log
+tests/test-suite.log
+
+# pkg-config generated
+libaprs.pc
+
+# Test data (generated, not checked in)
+testdata/
+
+# Debian build artifacts
+/debian/.debhelper/
+/debian/debhelper-build-stamp
+/debian/files
+/debian/*.substvars
+/debian/libaprs0/
+/debian/libaprs-dev/
+/debian/libaprs0-dbgsym/
+/debian/tmp/
+/debian/autoreconf.*
+
+# Generated packages
+*.deb
+*.ddeb
+*.buildinfo
+*.changes
+
+# Editor/IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+._*

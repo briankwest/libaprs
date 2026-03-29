@@ -4,6 +4,29 @@ C library for **APRS** (Automatic Packet Reporting System) packet parsing, build
 
 C99, no external dependencies beyond libc + libm. All layers are independent and composable.
 
+## Table of Contents
+
+- [Features](#features)
+- [Building](#building)
+- [API](#api)
+  - [APRS Parsing](#aprs-parsing)
+  - [APRS Building](#aprs-building)
+  - [AX.25 UI Frames](#ax25-ui-frames)
+  - [KISS Framing](#kiss-framing)
+  - [APRS-IS Client](#aprs-is-client)
+  - [Transport Backends](#transport-backends)
+  - [AFSK1200 Modem](#afsk1200-modem)
+  - [WAV Reader](#wav-reader)
+  - [Station Database](#station-database)
+  - [Streaming Usage](#streaming-usage)
+  - [Error Codes](#error-codes)
+- [AFSK1200 Modem Performance](#afsk1200-modem-performance)
+- [Test Suite](#test-suite)
+- [Example Programs](#example-programs)
+- [Project Structure](#project-structure)
+- [Technical Details](#technical-details)
+- [License](#license)
+
 ## Features
 
 - **APRS Parser** — TNC2 text parsing for all major packet types: position (uncompressed, compressed, Mic-E), message (with ack/rej), status, object, item, weather, telemetry, query, third-party

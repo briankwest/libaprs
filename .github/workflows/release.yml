@@ -45,7 +45,11 @@ jobs:
             make check
             dpkg-buildpackage -us -uc -b
             mkdir -p /workspace/dist
-            cp ../*.deb ../*.ddeb /workspace/dist/ 2>/dev/null || true
+            for f in ../*.deb ../*.ddeb; do
+              [ -f "$f" ] || continue
+              base=$(basename "$f" | sed 's/_\(arm64\|amd64\)/_ubuntu2404_\1/')
+              cp "$f" "/workspace/dist/$base"
+            done
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v5
@@ -86,7 +90,11 @@ jobs:
             make check
             dpkg-buildpackage -us -uc -b
             mkdir -p /workspace/dist
-            cp ../*.deb ../*.ddeb /workspace/dist/ 2>/dev/null || true
+            for f in ../*.deb ../*.ddeb; do
+              [ -f "$f" ] || continue
+              base=$(basename "$f" | sed 's/_\(arm64\|amd64\)/_debian12_\1/')
+              cp "$f" "/workspace/dist/$base"
+            done
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v5
@@ -124,7 +132,11 @@ jobs:
               make check
               dpkg-buildpackage -us -uc -b
               mkdir -p /workspace/dist
-              cp ../*.deb ../*.ddeb /workspace/dist/ 2>/dev/null || true
+              for f in ../*.deb ../*.ddeb; do
+                [ -f "$f" ] || continue
+                base=$(basename "$f" | sed "s/_\(arm64\|amd64\)/_debian13_\1/")
+                cp "$f" "/workspace/dist/$base"
+              done
             '
 
       - name: Upload artifacts
@@ -162,7 +174,11 @@ jobs:
       - name: Collect artifacts
         run: |
           mkdir -p dist
-          cp ../*.deb ../*.ddeb dist/ 2>/dev/null || true
+          for f in ../*.deb ../*.ddeb; do
+            [ -f "$f" ] || continue
+            base=$(basename "$f" | sed 's/_\(arm64\|amd64\)/_ubuntu2404_\1/')
+            cp "$f" "dist/$base"
+          done
           ls -lh dist/
 
       - name: Upload artifacts
@@ -205,7 +221,11 @@ jobs:
       - name: Collect artifacts
         run: |
           mkdir -p dist
-          cp ../*.deb ../*.ddeb dist/ 2>/dev/null || true
+          for f in ../*.deb ../*.ddeb; do
+            [ -f "$f" ] || continue
+            base=$(basename "$f" | sed 's/_\(arm64\|amd64\)/_debian12_\1/')
+            cp "$f" "dist/$base"
+          done
           ls -lh dist/
 
       - name: Upload artifacts
@@ -248,7 +268,11 @@ jobs:
       - name: Collect artifacts
         run: |
           mkdir -p dist
-          cp ../*.deb ../*.ddeb dist/ 2>/dev/null || true
+          for f in ../*.deb ../*.ddeb; do
+            [ -f "$f" ] || continue
+            base=$(basename "$f" | sed 's/_\(arm64\|amd64\)/_debian13_\1/')
+            cp "$f" "dist/$base"
+          done
           ls -lh dist/
 
       - name: Upload artifacts
@@ -271,6 +295,9 @@ jobs:
         with:
           path: dist
           merge-multiple: true
+
+      - name: List release files
+        run: ls -lh dist/
 
       - name: Generate release notes
         run: |

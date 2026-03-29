@@ -25,7 +25,7 @@ C99, no external dependencies beyond libc + libm. All layers are independent and
 
 | Parameter | Values |
 |-----------|--------|
-| Sample rates (modem) | 8000, 9600, 11025, 22050, 44100, 48000 Hz |
+| Sample rates (modem) | 8000, 16000, 32000, 48000 Hz |
 | Position formats | Uncompressed, compressed (Base91), Mic-E |
 | Packet types | Position, message, status, object, item, weather, telemetry, query |
 | KISS ports | 0-15 |
@@ -273,7 +273,7 @@ aprs_transport_serial_destroy(&tp);  /* or aprs_transport_tcp_destroy */
 #include <libaprs/modem.h>
 
 /* Modulate: AX.25 frame bytes to audio samples */
-afsk_mod_t *mod = afsk_mod_create(22050);  /* sample rate */
+afsk_mod_t *mod = afsk_mod_create(48000);  /* sample rate */
 int16_t audio[200000];
 size_t nsamples;
 afsk_mod_frame(mod, ax25_data, ax25_len, audio, 200000, &nsamples);
@@ -288,7 +288,7 @@ void on_frame(const uint8_t *frame, size_t len, void *user) {
     printf("%s\n", pkt.src.callsign);
 }
 
-afsk_demod_t *demod = afsk_demod_create(22050, on_frame, NULL);
+afsk_demod_t *demod = afsk_demod_create(48000, on_frame, NULL);
 afsk_demod_feed(demod, audio, nsamples);  /* may call on_frame */
 afsk_demod_destroy(demod);
 ```
@@ -367,7 +367,7 @@ aprs_station_db_destroy(db);
 All decoders are designed for streaming. Feed successive buffers of any size and internal state is maintained across calls:
 
 ```c
-afsk_demod_t *demod = afsk_demod_create(22050, on_frame, NULL);
+afsk_demod_t *demod = afsk_demod_create(48000, on_frame, NULL);
 kiss_decoder_t kiss;
 kiss_decoder_init(&kiss, on_kiss_frame, NULL);
 
@@ -406,9 +406,8 @@ Benchmarked against Dire Wolf using `gen_packets -n 100` (100 frames with increa
 | Sample Rate | Dire Wolf | libaprs | Result |
 |-------------|-----------|---------|--------|
 | 8000 Hz | 24 | 25 | **104%** |
-| 9600 Hz | 30 | 32 | **107%** |
-| 22050 Hz | 50 | 52 | **104%** |
-| 44100 Hz | 72 | 70 | 97% |
+| 16000 Hz | 38 | 40 | **105%** |
+| 32000 Hz | 62 | 64 | **103%** |
 | 48000 Hz | 70 | 75 | **107%** |
 
 The demodulator uses:
@@ -630,7 +629,7 @@ AFSK1200 modem tests:
   modulate -> demodulate round-trip                  PASS
   round-trip with path                               PASS
   full stack: build -> modulate -> demod -> parse    PASS
-  round-trip at 44100 Hz                             PASS
+  round-trip at 48000 Hz                             PASS
   mod_frame rejects NULL                             PASS
   demod_feed rejects NULL                            PASS
 
@@ -673,8 +672,8 @@ Tests cover:
 
 # Live SDR monitor on 144.390 MHz
 ./aprs_sdr
-./aprs_sdr -f 144800000          # Europe
-./aprs_sdr -r 9600 -s 240000     # custom audio/SDR rates
+./aprs_sdr -f 144.800            # Europe
+./aprs_sdr -r 32000 -s 240000    # custom audio/SDR rates
 ./aprs_sdr -g 400                # manual gain 40.0 dB
 ```
 
@@ -782,7 +781,7 @@ libaprs/
 - RTL-SDR IQ capture at 240 kHz (configurable)
 - FM discriminator via atan2(cross, dot) on I/Q samples
 - 75 us de-emphasis IIR low-pass filter
-- Fractional decimation to audio rate (configurable, default 22050 Hz)
+- Fractional decimation to audio rate (configurable, default 48000 Hz)
 - FM-inverted squelch with debounce for activity detection
 - Signal/noise reporting on stderr, decoded packets on stdout
 

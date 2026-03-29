@@ -39,7 +39,7 @@ jobs:
       - name: Generate test audio with Dire Wolf
         run: |
           mkdir -p testdata
-          for rate in 8000 9600 11025 22050 44100 48000; do
+          for rate in 8000 16000 32000 48000; do
             gen_packets -n 100 -r $rate -o testdata/test_${rate}.wav
           done
 

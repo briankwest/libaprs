@@ -46,7 +46,7 @@ void test_modem(void)
 
     test_begin("modulator create and destroy");
     {
-        afsk_mod_t *m = afsk_mod_create(9600);
+        afsk_mod_t *m = afsk_mod_create(8000);
         test_assert(m != NULL, "create returned NULL");
         afsk_mod_destroy(m);
     }
@@ -67,7 +67,7 @@ void test_modem(void)
 
     test_begin("demodulator create and destroy");
     {
-        afsk_demod_t *d = afsk_demod_create(9600, NULL, NULL);
+        afsk_demod_t *d = afsk_demod_create(8000, NULL, NULL);
         test_assert(d != NULL, "create returned NULL");
         afsk_demod_destroy(d);
     }
@@ -79,7 +79,7 @@ void test_modem(void)
 
     test_begin("modulate produces samples");
     {
-        afsk_mod_t *m = afsk_mod_create(9600);
+        afsk_mod_t *m = afsk_mod_create(8000);
         ax25_ui_frame_t frame;
         uint8_t ax_buf[256];
         size_t ax_len;
@@ -104,7 +104,7 @@ void test_modem(void)
         rc = afsk_mod_frame(m, ax_buf, ax_len, audio, 200000, &nsamples);
         test_assert(rc == APRS_OK, "modulate failed");
         test_assert(nsamples > 0, "should produce samples");
-        /* at 22050 Hz, ~18 samples/bit, a minimal frame should
+        /* at 8000 Hz, ~6.7 samples/bit, a minimal frame should
          * produce at least a few hundred samples */
         test_assert(nsamples > 500, "too few samples");
 
@@ -128,7 +128,7 @@ void test_modem(void)
         size_t nsamples;
         rx_log_t log;
         aprs_err_t rc;
-        int rate = 22050;
+        int rate = 16000;
 
         memset(&log, 0, sizeof(log));
 
@@ -187,7 +187,7 @@ void test_modem(void)
         int16_t *audio;
         size_t nsamples;
         rx_log_t log;
-        int rate = 22050;
+        int rate = 16000;
         const char *info = "!4903.50N/07201.75W-PHG2360";
 
         memset(&log, 0, sizeof(log));
@@ -240,7 +240,7 @@ void test_modem(void)
         int16_t *audio;
         size_t nsamples;
         rx_log_t log;
-        int rate = 22050;
+        int rate = 32000;
         const char *path[] = {"WIDE1-1"};
 
         memset(&log, 0, sizeof(log));
@@ -291,7 +291,7 @@ void test_modem(void)
     /* at 48000 Hz sample rate                                             */
     /* ------------------------------------------------------------------ */
 
-    test_begin("round-trip at 44100 Hz");
+    test_begin("round-trip at 48000 Hz");
     {
         afsk_mod_t *mod;
         afsk_demod_t *demod;
@@ -301,7 +301,7 @@ void test_modem(void)
         int16_t *audio;
         size_t nsamples;
         rx_log_t log;
-        int rate = 44100;
+        int rate = 48000;
 
         memset(&log, 0, sizeof(log));
 

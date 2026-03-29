@@ -7,13 +7,13 @@
  *
  * Usage:
  *   aprs_sdr                       # default: 144.390 MHz, device 0
- *   aprs_sdr -f 144800000          # Europe: 144.800 MHz
+ *   aprs_sdr -f 144.800            # Europe: 144.800 MHz
  *   aprs_sdr -d 1                  # use second RTL-SDR device
  *   aprs_sdr -g 40                 # set tuner gain (dB * 10)
  *
  * Based on the proven SDR pipeline from kerchunk/mod_sdr.c:
  *   RTL-SDR IQ @ 240 kHz → FM demod → de-emphasis → decimate
- *   → 22050 Hz audio → AFSK1200 demod → AX.25 decode → TNC2 print
+ *   → 48000 Hz audio → AFSK1200 demod → AX.25 decode → TNC2 print
  */
 
 #include <stdio.h>
@@ -34,7 +34,7 @@
 
 /* SDR parameters */
 #define DEFAULT_SDR_RATE  240000
-#define DEFAULT_AUDIO_RATE 22050
+#define DEFAULT_AUDIO_RATE 48000
 #define IQ_BUFSZ          (16384 * 4)
 #define APRS_FREQ_NA      144390000   /* 144.390 MHz */
 
@@ -82,10 +82,10 @@ static void on_frame(const uint8_t *frame, size_t frame_len, void *user)
 static void usage(const char *prog)
 {
     fprintf(stderr, "Usage: %s [-f freq_hz] [-d device_index] [-g gain] [-r audio_rate] [-s sdr_rate]\n", prog);
-    fprintf(stderr, "  -f  frequency in Hz (default 144390000)\n");
+    fprintf(stderr, "  -f  frequency in MHz or Hz (default 144.390)\n");
     fprintf(stderr, "  -d  RTL-SDR device index (default 0)\n");
     fprintf(stderr, "  -g  tuner gain in dB*10 (default auto)\n");
-    fprintf(stderr, "  -r  audio output rate in Hz (default 22050)\n");
+    fprintf(stderr, "  -r  audio output rate in Hz (default 48000)\n");
     fprintf(stderr, "  -s  SDR sample rate in Hz (default 240000)\n");
 }
 
@@ -102,8 +102,11 @@ int main(int argc, char **argv)
 
     /* parse args */
     for (i = 1; i < argc; i++) {
-        if (strcmp(argv[i], "-f") == 0 && i + 1 < argc)
-            freq = (uint32_t)atol(argv[++i]);
+        if (strcmp(argv[i], "-f") == 0 && i + 1 < argc) {
+            double f = atof(argv[++i]);
+            if (f < 10000) f *= 1e6;  /* treat as MHz if < 10 kHz */
+            freq = (uint32_t)f;
+        }
         else if (strcmp(argv[i], "-d") == 0 && i + 1 < argc)
             device_index = atoi(argv[++i]);
         else if (strcmp(argv[i], "-g") == 0 && i + 1 < argc)

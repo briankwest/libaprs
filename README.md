@@ -2,7 +2,7 @@
 
 C library for **APRS** (Automatic Packet Reporting System) packet parsing, building, and transport. Provides layered support for TNC2 text, AX.25 UI frames, KISS framing, APRS-IS internet gateway, AFSK1200 modem, and station state tracking.
 
-C99, no external dependencies beyond libc + libm. All layers are independent and composable.
+C99/POSIX, no external dependencies beyond libc, libm, and pthreads. All layers are independent and composable.
 
 ## Table of Contents
 
@@ -66,7 +66,7 @@ make check      # runs the test suite (190 tests)
 make install    # installs library, headers, and pkg-config file
 ```
 
-Compiles with `-Wall -Wextra -pedantic` in C99 strict mode. Requires only a C99 compiler, libc, and libm.
+Compiles with `-Wall -Wextra -pedantic` in C99 strict mode. Requires only a C99 compiler, libc, libm, and pthreads (POSIX).
 
 If librtlsdr is installed, `aprs_sdr` is also built automatically.
 
@@ -681,6 +681,7 @@ Tests cover:
 | `example_build_position` | Build position and message packets, format as TNC2 |
 | `example_kiss_bridge` | Bridge TNC2 text on stdin/stdout to KISS frames on serial or TCP |
 | `aprs_decode` | Decode APRS packets from WAV audio files (comparable to Dire Wolf `atest`) |
+| `gen_test_wavs` | Generate AFSK1200 WAV files for all 14 APRS packet types |
 | `aprs_sdr` | Live APRS monitor using an RTL-SDR dongle (requires librtlsdr) |
 
 ```bash
@@ -692,6 +693,10 @@ Tests cover:
 
 # Bridge to Dire Wolf on TCP
 ./kiss_bridge tcp localhost 8001
+
+# Generate test WAV files for all packet types
+./gen_test_wavs output_dir              # 48 kHz (default)
+./gen_test_wavs output_dir 8000         # specify sample rate
 
 # Live SDR monitor on 144.390 MHz
 ./aprs_sdr
@@ -740,6 +745,7 @@ libaprs/
     build_position.c    Build and format APRS packets
     kiss_bridge.c       TNC2 to KISS bridge for serial/TCP
     aprs_decode.c       WAV file AFSK decoder
+    gen_test_wavs.c     Generate test WAV files for all packet types
     aprs_sdr.c          Live RTL-SDR APRS monitor
   debian/               Debian packaging files
   .github/workflows/    CI and release workflows
@@ -783,6 +789,7 @@ libaprs/
 - HDLC framing: 25 preamble flags, bit stuffing (zero after five ones), FCS, 3 postamble flags
 
 ### AFSK1200 Demodulator
+- Thread-safe initialization via `pthread_once` for shared lookup tables
 - Quadrature mixing with 256-entry sine/cosine lookup oscillators
 - Root Raised Cosine FIR low-pass (2.80 symbols, rolloff 0.20, taps scale with sample rate)
 - Hamming-windowed FIR bandpass prefilter (1014-2386 Hz, ~8 symbol width)

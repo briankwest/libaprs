@@ -17,4 +17,4 @@ libaprs_la_CFLAGS = \
 	-I$(top_srcdir)/include
 
 libaprs_la_LDFLAGS = -version-info 0:0:0
-libaprs_la_LIBADD = -lm
+libaprs_la_LIBADD = -lm -lpthread

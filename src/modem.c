@@ -8,6 +8,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
+#include <pthread.h>
 #include "libaprs/modem.h"
 #include "libaprs/ax25.h"
 
@@ -257,18 +258,16 @@ struct afsk_demod {
 /* 256-entry sine/cosine lookup */
 static float sin256_table[256];
 static float cos256_table[256];
-static int trig_init_done = 0;
+static pthread_once_t trig_once = PTHREAD_ONCE_INIT;
 
 static void init_trig_tables(void)
 {
     int i;
-    if (trig_init_done) return;
     for (i = 0; i < 256; i++) {
         double a = (double)i / 256.0 * 2.0 * M_PI;
         sin256_table[i] = (float)sin(a);
         cos256_table[i] = (float)cos(a);
     }
-    trig_init_done = 1;
 }
 
 static inline float fsin256(uint32_t phase) {
@@ -383,7 +382,7 @@ afsk_demod_t *afsk_demod_create(int sample_rate,
 
     if (sample_rate <= 0) return NULL;
 
-    init_trig_tables();
+    pthread_once(&trig_once, init_trig_tables);
 
     d = (afsk_demod_t *)calloc(1, sizeof(*d));
     if (!d) return NULL;

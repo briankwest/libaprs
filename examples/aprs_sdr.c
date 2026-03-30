@@ -178,9 +178,8 @@ int main(int argc, char **argv)
         float prev_i = 0, prev_q = 0;
         float deemph = 0;
 
-        /* de-emphasis: 75 µs time constant */
-        float alpha = 1.0f / (1.0f + (float)sdr_rate * 75e-6f
-                              * 2.0f * (float)M_PI);
+        /* de-emphasis: 75 µs time constant (first-order IIR, forward Euler) */
+        float alpha = 1.0f / (1.0f + (float)sdr_rate * 75e-6f);
 
         /* fractional decimation: sdr_rate → audio_rate */
         double dec_step = (double)audio_rate / (double)sdr_rate;

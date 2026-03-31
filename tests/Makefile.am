@@ -13,7 +13,8 @@ test_libaprs_SOURCES = \
 test_libaprs_CFLAGS = \
 	-std=c99 -D_POSIX_C_SOURCE=200809L \
 	-Wall -Wextra -pedantic \
-	-I$(top_srcdir)/include
+	-I$(top_srcdir)/include \
+	-DLIBAPRS_GIT_HASH=\"$(GIT_HASH)\"
 
 test_libaprs_LDADD = $(top_builddir)/src/libaprs.la -lm
 

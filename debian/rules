@@ -1,4 +1,10 @@
 #!/usr/bin/make -f
 
+GIT_TAG := $(shell git describe --exact-match --tags HEAD 2>/dev/null)
+GIT_HASH := $(shell git rev-parse --short HEAD 2>/dev/null || echo "unknown")
+ifeq ($(GIT_TAG),)
+  export DEB_VERSION_UPSTREAM_SUFFIX = +git$(GIT_HASH)
+endif
+
 %:
 	dh $@

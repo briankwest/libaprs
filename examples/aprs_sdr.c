@@ -81,12 +81,46 @@ static void on_frame(const uint8_t *frame, size_t frame_len, void *user)
 
 static void usage(const char *prog)
 {
-    fprintf(stderr, "Usage: %s [-f freq_hz] [-d device_index] [-g gain] [-r audio_rate] [-s sdr_rate]\n", prog);
+    fprintf(stderr, "Usage: %s [-f freq_hz] [-d device_index] [-g gain] [-r audio_rate] [-s sdr_rate] [-w file.wav]\n", prog);
     fprintf(stderr, "  -f  frequency in MHz or Hz (default 144.390)\n");
     fprintf(stderr, "  -d  RTL-SDR device index (default 0)\n");
     fprintf(stderr, "  -g  tuner gain in dB*10 (default auto)\n");
     fprintf(stderr, "  -r  audio output rate in Hz (default 48000)\n");
     fprintf(stderr, "  -s  SDR sample rate in Hz (default 240000)\n");
+    fprintf(stderr, "  -w  write demodulated audio to WAV file (for debugging)\n");
+}
+
+/* minimal WAV writer for audio dump */
+static FILE *wav_start(const char *path, int rate)
+{
+    FILE *fp = fopen(path, "wb");
+    if (!fp) return NULL;
+    /* write header with placeholder sizes — patched on close */
+    uint32_t zero = 0;
+    uint16_t fmt_tag = 1, channels = 1, bits = 16;
+    uint32_t srate = (uint32_t)rate;
+    uint32_t byte_rate = srate * 2;
+    uint16_t block_align = 2;
+    uint32_t fmt_size = 16;
+    fwrite("RIFF", 1, 4, fp); fwrite(&zero, 4, 1, fp);
+    fwrite("WAVE", 1, 4, fp);
+    fwrite("fmt ", 1, 4, fp); fwrite(&fmt_size, 4, 1, fp);
+    fwrite(&fmt_tag, 2, 1, fp); fwrite(&channels, 2, 1, fp);
+    fwrite(&srate, 4, 1, fp); fwrite(&byte_rate, 4, 1, fp);
+    fwrite(&block_align, 2, 1, fp); fwrite(&bits, 2, 1, fp);
+    fwrite("data", 1, 4, fp); fwrite(&zero, 4, 1, fp);
+    return fp;
+}
+
+static void wav_finish(FILE *fp)
+{
+    if (!fp) return;
+    long pos = ftell(fp);
+    uint32_t data_bytes = (uint32_t)(pos - 44);
+    uint32_t riff_size = (uint32_t)(pos - 8);
+    fseek(fp, 4, SEEK_SET);  fwrite(&riff_size, 4, 1, fp);
+    fseek(fp, 40, SEEK_SET); fwrite(&data_bytes, 4, 1, fp);
+    fclose(fp);
 }
 
 int main(int argc, char **argv)
@@ -98,6 +132,7 @@ int main(int argc, char **argv)
     int gain = -1; /* -1 = auto */
     int audio_rate = DEFAULT_AUDIO_RATE;
     uint32_t sdr_rate = DEFAULT_SDR_RATE;
+    const char *wav_path = NULL;
     int rc, i;
 
     /* parse args */
@@ -115,6 +150,8 @@ int main(int argc, char **argv)
             audio_rate = atoi(argv[++i]);
         else if (strcmp(argv[i], "-s") == 0 && i + 1 < argc)
             sdr_rate = (uint32_t)atol(argv[++i]);
+        else if (strcmp(argv[i], "-w") == 0 && i + 1 < argc)
+            wav_path = argv[++i];
         else {
             usage(argv[0]);
             return 1;
@@ -170,6 +207,10 @@ int main(int argc, char **argv)
     signal(SIGINT, sighandler);
     signal(SIGTERM, sighandler);
 
+    FILE *wav_fp = wav_path ? wav_start(wav_path, audio_rate) : NULL;
+    if (wav_path && !wav_fp)
+        fprintf(stderr, "Warning: could not open %s for writing\n", wav_path);
+
     /* main loop */
     {
         unsigned char *iq_buf = (unsigned char *)malloc(IQ_BUFSZ);
@@ -178,20 +219,31 @@ int main(int argc, char **argv)
         float prev_i = 0, prev_q = 0;
         float deemph = 0;
 
+        /* DC blocking filter: removes frequency-error offset from FM demod
+         * H(z) = (1 - z^-1) / (1 - alpha_dc * z^-1), cutoff ~76 Hz */
+        float dc_x_prev = 0, dc_y_prev = 0;
+        const float alpha_dc = 0.998f;
+
         /* de-emphasis: 75 µs time constant (first-order IIR, forward Euler) */
         float alpha = 1.0f / (1.0f + (float)sdr_rate * 75e-6f);
 
-        /* fractional decimation: sdr_rate → audio_rate */
+        /* averaging decimation: sdr_rate → audio_rate
+         * accumulate samples and average — acts as anti-alias filter */
         double dec_step = (double)audio_rate / (double)sdr_rate;
         double dec_acc = 0.0;
+        float dec_sum = 0;
+        int dec_count = 0;
 
-        /* squelch / activity detection */
-        #define SQ_OPEN_THRESH   2000
-        #define SQ_CLOSE_THRESH  3000
-        #define SQ_DEBOUNCE      3
+        /* squelch / activity detection (FM-inverted: low RMS = signal)
+         * thresholds calibrated for correct 75µs de-emphasis */
+        #define SQ_OPEN_THRESH   15000
+        #define SQ_CLOSE_THRESH  17000
+        #define SQ_DEBOUNCE      5
         int sq_open = 0;
         int sq_open_cnt = 0, sq_close_cnt = 0;
         time_t sq_open_time = 0;
+        int64_t rms_sum = 0;
+        int rms_count = 0;
         int32_t peak_rms = 0;
         int prev_pkt_count = 0;
 
@@ -219,13 +271,29 @@ int main(int argc, char **argv)
                 prev_i = si;
                 prev_q = sq;
 
-                float audio = fm * (16000.0f / 0.07f);
-                deemph = deemph + alpha * (audio - deemph);
+                /* scale FM phase-delta to audio:
+                 * ±5 kHz deviation → ±16000 amplitude
+                 * max_dphi = 2π × 5000 / sdr_rate */
+                float audio = fm * (16000.0f / ((float)(2.0 * M_PI * 5000.0) / (float)sdr_rate));
 
+                /* DC blocker: remove frequency-error offset */
+                float dc_out = audio - dc_x_prev + alpha_dc * dc_y_prev;
+                dc_x_prev = audio;
+                dc_y_prev = dc_out;
+
+                deemph = deemph + alpha * (dc_out - deemph);
+
+                dec_sum += deemph;
+                dec_count++;
                 dec_acc += dec_step;
                 if (dec_acc >= 1.0) {
                     dec_acc -= 1.0;
-                    audio_buf[audio_pos++] = (int16_t)deemph;
+                    float avg = dec_sum / dec_count;
+                    if (avg > 32767.0f) avg = 32767.0f;
+                    if (avg < -32768.0f) avg = -32768.0f;
+                    audio_buf[audio_pos++] = (int16_t)avg;
+                    dec_sum = 0;
+                    dec_count = 0;
                 }
             }
 
@@ -259,17 +327,22 @@ int main(int argc, char **argv)
                     sq_open = 1;
                     sq_open_time = time(NULL);
                     peak_rms = rms;
+                    rms_sum = 0;
+                    rms_count = 0;
                     prev_pkt_count = g_packet_count;
 
                     time_t now = time(NULL);
                     struct tm tbuf;
                     struct tm *t = localtime_r(&now, &tbuf);
-                    fprintf(stderr, "[%02d:%02d:%02d] >>> signal detected (RMS %d)\n",
-                            t->tm_hour, t->tm_min, t->tm_sec, rms);
+                    fprintf(stderr, "[%02d:%02d:%02d] >>> %.4f MHz active (RMS %d)\n",
+                            t->tm_hour, t->tm_min, t->tm_sec,
+                            freq / 1e6, rms);
                 }
 
                 if (sq_open) {
                     if (rms > peak_rms) peak_rms = rms;
+                    rms_sum += sum;
+                    rms_count += audio_pos;
                 }
 
                 if (sq_open && sq_close_cnt >= SQ_DEBOUNCE) {
@@ -277,13 +350,20 @@ int main(int argc, char **argv)
                     if (dur < 0.1) dur = 0.1;
                     int decoded = g_packet_count - prev_pkt_count;
 
+                    int32_t avg_rms = 0;
+                    if (rms_count > 0) {
+                        int64_t a = rms_sum / rms_count;
+                        while ((int64_t)avg_rms * avg_rms < a) avg_rms++;
+                    }
+
                     time_t now = time(NULL);
                     struct tm tbuf;
                     struct tm *t = localtime_r(&now, &tbuf);
                     fprintf(stderr,
-                            "[%02d:%02d:%02d] <<< signal lost  (%.1fs, peak RMS %d, decoded %d packet%s)\n",
+                            "[%02d:%02d:%02d] <<< %.4f MHz idle  (%.1fs, rms=%d/%d, decoded %d packet%s)\n",
                             t->tm_hour, t->tm_min, t->tm_sec,
-                            dur, peak_rms,
+                            freq / 1e6, dur,
+                            (int)avg_rms, (int)peak_rms,
                             decoded, decoded == 1 ? "" : "s");
 
                     sq_open = 0;
@@ -291,12 +371,23 @@ int main(int argc, char **argv)
                 }
             }
 
+            if (!sq_open) continue;
+
+            /* write audio to WAV if requested */
+            if (wav_fp)
+                fwrite(audio_buf, 2, (size_t)audio_pos, wav_fp);
+
             /* feed audio to AFSK demodulator */
             afsk_demod_feed(demod, audio_buf, (size_t)audio_pos);
         }
 
         free(iq_buf);
         free(audio_buf);
+    }
+
+    if (wav_fp) {
+        wav_finish(wav_fp);
+        fprintf(stderr, "Audio written to %s\n", wav_path);
     }
 
     fprintf(stderr, "\n%d packets decoded\n", g_packet_count);

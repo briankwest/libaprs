@@ -5,7 +5,7 @@ noinst_PROGRAMS = \
 	aprs_decode \
 	gen_test_wavs
 
-AM_CFLAGS = -std=c99 -D_POSIX_C_SOURCE=200809L -I$(top_srcdir)/include
+AM_CFLAGS = -std=c99 -D_POSIX_C_SOURCE=200809L -I$(top_srcdir)/include -DLIBAPRS_GIT_HASH=\"$(GIT_HASH)\"
 LDADD = $(top_builddir)/src/libaprs.la -lm
 
 example_parse_packet_SOURCES = parse_packet.c

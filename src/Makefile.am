@@ -14,7 +14,8 @@ libaprs_la_SOURCES = \
 libaprs_la_CFLAGS = \
 	-std=c99 -D_POSIX_C_SOURCE=200809L \
 	-Wall -Wextra -pedantic \
-	-I$(top_srcdir)/include
+	-I$(top_srcdir)/include \
+	-DLIBAPRS_GIT_HASH=\"$(GIT_HASH)\"
 
 libaprs_la_LDFLAGS = -version-info 0:0:0
 libaprs_la_LIBADD = -lm -lpthread

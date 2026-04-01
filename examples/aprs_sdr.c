@@ -87,6 +87,8 @@ static void usage(const char *prog)
     fprintf(stderr, "  -g  tuner gain in dB*10 (default auto)\n");
     fprintf(stderr, "  -r  audio output rate in Hz (default 48000)\n");
     fprintf(stderr, "  -s  SDR sample rate in Hz (default 240000)\n");
+    fprintf(stderr, "  -E  disable de-emphasis (for data/FSK signals)\n");
+    fprintf(stderr, "  -i  invert polarity\n");
     fprintf(stderr, "  -w  write demodulated audio to WAV file (for debugging)\n");
 }
 
@@ -133,6 +135,8 @@ int main(int argc, char **argv)
     int audio_rate = DEFAULT_AUDIO_RATE;
     uint32_t sdr_rate = DEFAULT_SDR_RATE;
     const char *wav_path = NULL;
+    int no_deemph = 0;
+    int invert = 0;
     int rc, i;
 
     /* parse args */
@@ -152,6 +156,10 @@ int main(int argc, char **argv)
             sdr_rate = (uint32_t)atol(argv[++i]);
         else if (strcmp(argv[i], "-w") == 0 && i + 1 < argc)
             wav_path = argv[++i];
+        else if (strcmp(argv[i], "-E") == 0)
+            no_deemph = 1;
+        else if (strcmp(argv[i], "-i") == 0)
+            invert = 1;
         else {
             usage(argv[0]);
             return 1;
@@ -267,7 +275,7 @@ int main(int argc, char **argv)
 
                 float dot   = si * prev_i + sq * prev_q;
                 float cross = sq * prev_i - si * prev_q;
-                float fm = atan2f(cross, dot);
+                float fm = atan2f(cross, dot) * (invert ? -1.0f : 1.0f);
                 prev_i = si;
                 prev_q = sq;
 
@@ -281,9 +289,10 @@ int main(int argc, char **argv)
                 dc_x_prev = audio;
                 dc_y_prev = dc_out;
 
-                deemph = deemph + alpha * (dc_out - deemph);
+                if (!no_deemph)
+                    deemph = deemph + alpha * (dc_out - deemph);
 
-                dec_sum += deemph;
+                dec_sum += no_deemph ? dc_out : deemph;
                 dec_count++;
                 dec_acc += dec_step;
                 if (dec_acc >= 1.0) {

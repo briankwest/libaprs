@@ -282,9 +282,9 @@ int main(int argc, char **argv)
                 /* scale FM phase-delta to audio:
                  * ±5 kHz deviation → ±16000 amplitude
                  * max_dphi = 2π × 5000 / sdr_rate
-                 * Without de-emphasis (-E), the signal is ~20x larger
-                 * (de-emphasis alpha ≈ 0.05), so scale down to avoid clipping. */
-                float audio_scale = no_deemph ? 800.0f : 16000.0f;
+                 * Without de-emphasis (-E), the signal is ~5x larger
+                 * at AFSK frequencies, so scale down to avoid clipping. */
+                float audio_scale = no_deemph ? 4000.0f : 16000.0f;
                 float audio = fm * (audio_scale / ((float)(2.0 * M_PI * 5000.0) / (float)sdr_rate));
 
                 /* DC blocker: remove frequency-error offset */

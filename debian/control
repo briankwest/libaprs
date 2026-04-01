@@ -5,6 +5,7 @@ Maintainer: Brian <brian@example.com>
 Build-Depends:
  debhelper-compat (= 13),
  dh-autoreconf,
+ librtlsdr-dev,
 Standards-Version: 4.6.2
 Homepage: https://github.com/briankwest/libaprs
 Rules-Requires-Root: no

@@ -20,7 +20,7 @@ extern "C" {
 #define HDLC_MAX_FRAME     1024
 
 /* silence before preamble for receiver squelch lead-in (ms) */
-#define AFSK_LEADIN_MS        100
+#define AFSK_LEADIN_MS        500
 /* default preamble: number of flag bytes before data */
 #define AFSK_PREAMBLE_FLAGS   50   /* ~333ms at 1200 baud */
 /* postamble flags */

@@ -235,8 +235,22 @@ int main(int argc, char **argv)
         /* de-emphasis: 75 µs time constant (first-order IIR, forward Euler) */
         float alpha = 1.0f / (1.0f + (float)sdr_rate * 75e-6f);
 
-        /* averaging decimation: sdr_rate → audio_rate
-         * accumulate samples and average — acts as anti-alias filter */
+        /* Anti-alias + decimation: sdr_rate → audio_rate
+         * Butterworth 2nd-order IIR at audio_rate/2 before averaging.
+         * Without this, the box-filter averaging has only -13 dB
+         * sidelobe rejection, aliasing HF noise into the audio band
+         * and corrupting AFSK tones. The biquad gives ~40 dB. */
+        float aa_cutoff = (float)audio_rate / 2.0f;
+        float aa_w0 = tanf((float)M_PI * aa_cutoff / (float)sdr_rate);
+        float aa_Q = 0.7071f; /* Butterworth */
+        float aa_d = 1.0f + aa_w0 / aa_Q + aa_w0 * aa_w0;
+        float aa_b0 = aa_w0 * aa_w0 / aa_d;
+        float aa_b1 = 2.0f * aa_b0;
+        float aa_b2 = aa_b0;
+        float aa_a1 = 2.0f * (aa_w0 * aa_w0 - 1.0f) / aa_d;
+        float aa_a2 = (1.0f - aa_w0 / aa_Q + aa_w0 * aa_w0) / aa_d;
+        float aa_x1 = 0, aa_x2 = 0, aa_y1 = 0, aa_y2 = 0;
+
         double dec_step = (double)audio_rate / (double)sdr_rate;
         double dec_acc = 0.0;
         float dec_sum = 0;
@@ -295,7 +309,15 @@ int main(int argc, char **argv)
                 if (!no_deemph)
                     deemph = deemph + alpha * (dc_out - deemph);
 
-                dec_sum += no_deemph ? dc_out : deemph;
+                float pre_dec = no_deemph ? dc_out : deemph;
+
+                /* Butterworth anti-alias before decimation */
+                float aa_y = aa_b0*pre_dec + aa_b1*aa_x1 + aa_b2*aa_x2
+                           - aa_a1*aa_y1 - aa_a2*aa_y2;
+                aa_x2 = aa_x1; aa_x1 = pre_dec;
+                aa_y2 = aa_y1; aa_y1 = aa_y;
+
+                dec_sum += aa_y;
                 dec_count++;
                 dec_acc += dec_step;
                 if (dec_acc >= 1.0) {

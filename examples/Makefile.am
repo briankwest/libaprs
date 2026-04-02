@@ -18,5 +18,5 @@ if HAVE_RTLSDR
 noinst_PROGRAMS += aprs_sdr
 aprs_sdr_SOURCES = aprs_sdr.c
 aprs_sdr_CFLAGS = $(AM_CFLAGS) $(RTLSDR_CFLAGS)
-aprs_sdr_LDADD = $(LDADD) $(RTLSDR_LIBS)
+aprs_sdr_LDADD = $(LDADD) $(RTLSDR_LIBS) -lpthread
 endif

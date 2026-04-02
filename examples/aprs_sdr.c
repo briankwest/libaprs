@@ -279,17 +279,11 @@ int main(int argc, char **argv)
                 prev_i = si;
                 prev_q = sq;
 
-                /* scale FM phase-delta to audio:
-                 * ±5 kHz deviation → ±16000 amplitude
-                 * max_dphi = 2π × 5000 / sdr_rate
-                 * Without de-emphasis (-E), the signal is ~5x larger
-                 * at AFSK frequencies, so scale down to avoid clipping. */
-                float audio_scale = 16000.0f;
-                float audio = fm * (audio_scale / ((float)(2.0 * M_PI * 5000.0) / (float)sdr_rate));
-
-                /* DC blocker: remove frequency-error offset */
-                float dc_out = audio - dc_x_prev + alpha_dc * dc_y_prev;
-                dc_x_prev = audio;
+                /* DC blocker on raw radians (same as pocsag_sdr/flex_sdr).
+                 * Scaling AFTER decimation prevents DC blocker saturation
+                 * from noise transients that corrupt the AFSK preamble. */
+                float dc_out = fm - dc_x_prev + alpha_dc * dc_y_prev;
+                dc_x_prev = fm;
                 dc_y_prev = dc_out;
 
                 if (!no_deemph)
@@ -300,7 +294,9 @@ int main(int argc, char **argv)
                 dec_acc += dec_step;
                 if (dec_acc >= 1.0) {
                     dec_acc -= 1.0;
-                    float avg = dec_sum / dec_count;
+                    /* scale AFTER decimation: ±5 kHz dev → ±16000 int16 */
+                    float avg = (dec_sum / dec_count)
+                              * (16000.0f / ((float)(2.0 * M_PI * 5000.0) / (float)sdr_rate));
                     if (avg > 32767.0f) avg = 32767.0f;
                     if (avg < -32768.0f) avg = -32768.0f;
                     audio_buf[audio_pos++] = (int16_t)avg;

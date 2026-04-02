@@ -379,14 +379,16 @@ int main(int argc, char **argv)
                 }
             }
 
+            /* Always feed AFSK demod — it handles noise internally
+             * via HDLC flag hunting.  Squelch gating would eat the
+             * preamble (680ms debounce > 300ms preamble flags). */
+            afsk_demod_feed(demod, audio_buf, (size_t)audio_pos);
+
             if (!sq_open) continue;
 
-            /* write audio to WAV if requested */
+            /* write audio to WAV only when squelch is open */
             if (wav_fp)
                 fwrite(audio_buf, 2, (size_t)audio_pos, wav_fp);
-
-            /* feed audio to AFSK demodulator */
-            afsk_demod_feed(demod, audio_buf, (size_t)audio_pos);
         }
 
         free(iq_buf);

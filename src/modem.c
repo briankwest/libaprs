@@ -150,6 +150,15 @@ aprs_err_t afsk_mod_frame(afsk_mod_t *m,
     m->current_tone = 0;
     m->bit_acc = 0.0;
 
+    /* silence lead-in: lets the receiver's squelch open before
+     * the preamble flags arrive */
+    {
+        size_t leadin = (size_t)((int64_t)m->sample_rate * AFSK_LEADIN_MS / 1000);
+        if (total + leadin > max_samples) leadin = max_samples - total;
+        for (size_t j = 0; j < leadin; j++)
+            out[total++] = 0;
+    }
+
     /* preamble flags */
     for (i = 0; i < AFSK_PREAMBLE_FLAGS; i++)
         total += mod_flag(m, out + total, max_samples - total);

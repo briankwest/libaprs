@@ -284,7 +284,7 @@ int main(int argc, char **argv)
                  * max_dphi = 2π × 5000 / sdr_rate
                  * Without de-emphasis (-E), the signal is ~5x larger
                  * at AFSK frequencies, so scale down to avoid clipping. */
-                float audio_scale = no_deemph ? 4000.0f : 16000.0f;
+                float audio_scale = 16000.0f;
                 float audio = fm * (audio_scale / ((float)(2.0 * M_PI * 5000.0) / (float)sdr_rate));
 
                 /* DC blocker: remove frequency-error offset */

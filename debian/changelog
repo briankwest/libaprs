@@ -1,3 +1,13 @@
+libaprs (1.0.2-1) stable; urgency=low
+
+  * RTL-SDR receiver (aprs_sdr) with async IQ reader
+  * 500ms silence lead-in and 50-flag preamble
+  * Post-decimation audio scaling (fixes DC blocker saturation)
+  * tx_level config for FM deviation control
+  * 190 tests, zero allocation
+
+ -- Brian <brian@example.com>  Wed, 02 Apr 2026 00:00:00 +0000
+
 libaprs (1.0.1-1) unstable; urgency=low
 
   * Release 1.0.1.

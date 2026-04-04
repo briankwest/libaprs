@@ -26,6 +26,7 @@ struct afsk_mod {
     double samples_per_bit;
     double bit_acc;          /* fractional sample accumulator */
     int current_tone;        /* 0=mark, 1=space */
+    int preemph;             /* 1=apply 75µs pre-emphasis (default) */
 };
 
 afsk_mod_t *afsk_mod_create(int sample_rate)
@@ -38,12 +39,18 @@ afsk_mod_t *afsk_mod_create(int sample_rate)
     m->samples_per_bit = (double)sample_rate / (double)AFSK_BAUD;
     m->current_tone = 0; /* start with mark */
     m->phase = 0.0;
+    m->preemph = 1;      /* on by default for flat/SDR transmitters */
     return m;
 }
 
 void afsk_mod_destroy(afsk_mod_t *m)
 {
     free(m);
+}
+
+void afsk_mod_set_preemph(afsk_mod_t *m, bool enable)
+{
+    if (m) m->preemph = enable ? 1 : 0;
 }
 
 /* Generate samples for one bit using fractional accumulator
@@ -183,17 +190,16 @@ aprs_err_t afsk_mod_frame(afsk_mod_t *m,
 
     /* Apply 75µs pre-emphasis so the AFSK tones arrive flat after
      * the receiver's standard FM de-emphasis filter.  Without this,
-     * the 2200 Hz space tone is ~5 dB down from the 1200 Hz mark
+     * the 2200 Hz space tone is ~3-4 dB down from the 1200 Hz mark
      * after de-emphasis, which prevents real FM radios from decoding.
      *
-     * This is a first-order high-pass: y[n] = x[n] - x[n-1] + α·y[n-1]
-     * with α = 1/(1 + 1/(2π·τ·fs)), τ = 75µs.  The result is then
-     * normalized to keep the same peak amplitude. */
-    {
-        double tau = 75.0e-6;
-        double alpha = 1.0 / (1.0 + 1.0 / (2.0 * M_PI * tau
-                                              * (double)m->sample_rate));
-        double prev_x = 0.0, prev_y = 0.0;
+     * First-order FIR pre-emphasis: y[n] = x[n] + α·(x[n] - x[n-1])
+     * where α = τ·fs, τ = 75µs.  This is the discrete approximation
+     * of H(s) = 1 + s·τ.  The result is normalized to keep the same
+     * peak amplitude. */
+    if (m->preemph) {
+        double alpha = 75.0e-6 * (double)m->sample_rate;
+        double prev_x = 0.0;
         double peak = 0.0;
 
         /* pre-emphasis pass (skip silence lead-in) */
@@ -203,9 +209,8 @@ aprs_err_t afsk_mod_frame(afsk_mod_t *m,
 
         for (size_t j = data_start; j < total; j++) {
             double x = (double)out[j];
-            double y = x - prev_x + alpha * prev_y;
+            double y = x + alpha * (x - prev_x);
             prev_x = x;
-            prev_y = y;
             double a = fabs(y);
             if (a > peak) peak = a;
             out[j] = (int16_t)y;  /* temporary — will normalize */

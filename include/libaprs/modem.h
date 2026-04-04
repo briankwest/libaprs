@@ -22,9 +22,9 @@ extern "C" {
 /* silence before preamble for receiver squelch lead-in (ms) */
 #define AFSK_LEADIN_MS        500
 /* default preamble: number of flag bytes before data */
-#define AFSK_PREAMBLE_FLAGS   50   /* ~333ms at 1200 baud */
+#define AFSK_PREAMBLE_FLAGS   100  /* ~667ms at 1200 baud — long preamble for reliable PLL lock */
 /* postamble flags */
-#define AFSK_POSTAMBLE_FLAGS   3
+#define AFSK_POSTAMBLE_FLAGS   5
 
 /* ------------------------------------------------------------------ */
 /* modulator                                                           */
@@ -34,6 +34,12 @@ typedef struct afsk_mod afsk_mod_t;
 
 afsk_mod_t *afsk_mod_create(int sample_rate);
 void        afsk_mod_destroy(afsk_mod_t *m);
+
+/* Disable 75µs pre-emphasis (default: on).
+ * Turn OFF when feeding into a radio's mic/data input — the radio's
+ * FM modulator already applies pre-emphasis.  Leave ON for flat/SDR
+ * transmitters that skip analog pre-emphasis. */
+void        afsk_mod_set_preemph(afsk_mod_t *m, bool enable);
 
 /*
  * Modulate an AX.25 frame (without FCS — FCS is computed and appended).

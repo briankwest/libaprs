@@ -181,6 +181,45 @@ aprs_err_t afsk_mod_frame(afsk_mod_t *m,
     for (i = 0; i < AFSK_POSTAMBLE_FLAGS; i++)
         total += mod_flag(m, out + total, max_samples - total);
 
+    /* Apply 75µs pre-emphasis so the AFSK tones arrive flat after
+     * the receiver's standard FM de-emphasis filter.  Without this,
+     * the 2200 Hz space tone is ~5 dB down from the 1200 Hz mark
+     * after de-emphasis, which prevents real FM radios from decoding.
+     *
+     * This is a first-order high-pass: y[n] = x[n] - x[n-1] + α·y[n-1]
+     * with α = 1/(1 + 1/(2π·τ·fs)), τ = 75µs.  The result is then
+     * normalized to keep the same peak amplitude. */
+    {
+        double tau = 75.0e-6;
+        double alpha = 1.0 / (1.0 + 1.0 / (2.0 * M_PI * tau
+                                              * (double)m->sample_rate));
+        double prev_x = 0.0, prev_y = 0.0;
+        double peak = 0.0;
+
+        /* pre-emphasis pass (skip silence lead-in) */
+        size_t data_start = (size_t)((int64_t)m->sample_rate
+                                      * AFSK_LEADIN_MS / 1000);
+        if (data_start > total) data_start = total;
+
+        for (size_t j = data_start; j < total; j++) {
+            double x = (double)out[j];
+            double y = x - prev_x + alpha * prev_y;
+            prev_x = x;
+            prev_y = y;
+            double a = fabs(y);
+            if (a > peak) peak = a;
+            out[j] = (int16_t)y;  /* temporary — will normalize */
+        }
+
+        /* normalize to original peak amplitude (16000) so the
+         * caller's tx_level scaling still works as expected */
+        if (peak > 1.0) {
+            double norm = 16000.0 / peak;
+            for (size_t j = data_start; j < total; j++)
+                out[j] = (int16_t)((double)out[j] * norm);
+        }
+    }
+
     *nsamples = total;
     return APRS_OK;
 }

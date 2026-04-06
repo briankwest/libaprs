@@ -14,10 +14,12 @@ example_kiss_bridge_SOURCES = kiss_bridge.c
 aprs_decode_SOURCES = aprs_decode.c
 gen_test_wavs_SOURCES = gen_test_wavs.c
 
+if HAVE_PORTAUDIO
 noinst_PROGRAMS += aprs_tx
 aprs_tx_SOURCES = aprs_tx.c
 aprs_tx_CFLAGS = $(AM_CFLAGS)
 aprs_tx_LDADD = $(LDADD) -lportaudio
+endif
 
 if HAVE_RTLSDR
 noinst_PROGRAMS += aprs_sdr

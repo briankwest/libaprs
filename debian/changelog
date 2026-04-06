@@ -1,3 +1,9 @@
+libaprs (1.0.4-1) unstable; urgency=low
+
+  * Make PortAudio optional for examples
+
+ -- Brian West <brian@kerchunk.net>  Mon, 06 Apr 2026 15:08:29 +0000
+
 libaprs (1.0.3-1) unstable; urgency=low
 
   * Release 1.0.3

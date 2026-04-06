@@ -1,3 +1,9 @@
+libaprs (1.0.3-1) unstable; urgency=low
+
+  * Release 1.0.3
+
+ -- Brian West <brian@kerchunk.net>  Mon, 06 Apr 2026 14:44:13 +0000
+
 libaprs (1.0.2-1) stable; urgency=low
 
   * RTL-SDR receiver (aprs_sdr) with async IQ reader

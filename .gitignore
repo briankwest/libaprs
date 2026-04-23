@@ -57,6 +57,7 @@ examples/example_build_position
 examples/example_kiss_bridge
 examples/aprs_decode
 examples/aprs_sdr
+examples/gen_test_wavs
 tests/test_libaprs
 
 # Test logs
